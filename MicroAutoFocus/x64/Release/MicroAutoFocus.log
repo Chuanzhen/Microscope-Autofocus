@@ -1,0 +1,38 @@
+﻿生成启动时间为 6/4/2018 5:18:43 PM。
+     1>项目“D:\MyProgram\MicroAutoFocus\MicroAutoFocus\MicroAutoFocus.vcxproj”在节点 2 上(Rebuild 个目标)。
+     1>ClCompile:
+         D:\win10\program file\VS2013\VC\bin\x86_amd64\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /GL /D WIN32 /D _WINDOWS /D NDEBUG /D _UNICODE /D UNICODE /Gm- /EHsc /MT /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Yc"stdafx.h" /Fp"x64\Release\MicroAutoFocus.pch" /Fo"x64\Release\\" /Fd"x64\Release\vc120.pdb" /Gd /TP /errorReport:prompt stdafx.cpp
+         stdafx.cpp
+         D:\win10\program file\VS2013\VC\bin\x86_amd64\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /GL /D WIN32 /D _WINDOWS /D NDEBUG /D _UNICODE /D UNICODE /Gm- /EHsc /MT /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Yu"stdafx.h" /Fp"x64\Release\MicroAutoFocus.pch" /Fo"x64\Release\\" /Fd"x64\Release\vc120.pdb" /Gd /TP /errorReport:prompt ImageProcess.cpp MicroAutoFocus.cpp MicroAutoFocusDlg.cpp
+         ImageProcess.cpp
+         MicroAutoFocus.cpp
+     1>C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\Include\uc480.h(192): warning C4005: “IS_SENSOR_C1280G12M”: 宏重定义
+                 C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\Include\uc480.h(121) : 参见“IS_SENSOR_C1280G12M”的前一个定义
+     1>C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\Include\uc480.h(193): warning C4005: “IS_SENSOR_C1280G12C”: 宏重定义
+                 C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\Include\uc480.h(122) : 参见“IS_SENSOR_C1280G12C”的前一个定义
+     1>C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\Include\uc480.h(194): warning C4005: “IS_SENSOR_C1280G12N”: 宏重定义
+                 C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\Include\uc480.h(123) : 参见“IS_SENSOR_C1280G12N”的前一个定义
+         MicroAutoFocusDlg.cpp
+     1>C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\Include\uc480.h(192): warning C4005: “IS_SENSOR_C1280G12M”: 宏重定义
+                 C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\Include\uc480.h(121) : 参见“IS_SENSOR_C1280G12M”的前一个定义
+     1>C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\Include\uc480.h(193): warning C4005: “IS_SENSOR_C1280G12C”: 宏重定义
+                 C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\Include\uc480.h(122) : 参见“IS_SENSOR_C1280G12C”的前一个定义
+     1>C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\Include\uc480.h(194): warning C4005: “IS_SENSOR_C1280G12N”: 宏重定义
+                 C:\Program Files\Thorlabs\Scientific Imaging\DCx Camera Support\Develop\Include\uc480.h(123) : 参见“IS_SENSOR_C1280G12N”的前一个定义
+     1>MicroAutoFocusDlg.cpp(175): warning C4244: “参数”: 从“double”转换到“int”，可能丢失数据
+       ResourceCompile:
+         C:\Program Files (x86)\Windows Kits\8.1\bin\x86\rc.exe /D NDEBUG /D _UNICODE /D UNICODE /l"0x0804" /Ix64\Release\ /nologo /fo"x64\Release\MicroAutoFocus.res" MicroAutoFocus.rc 
+       Link:
+         D:\win10\program file\VS2013\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:"D:\MyProgram\MicroAutoFocus\x64\Release\MicroAutoFocus.exe" /INCREMENTAL:NO /NOLOGO user32.lib vfw32.lib comctl32.lib ThorZStepper.lib uc480_64.lib uc480_tools_64.lib IlmImf.lib libjasper.lib libjpeg.lib libpng.lib libtiff.lib opencv_calib3d248.lib opencv_contrib248.lib opencv_core248.lib opencv_features2d248.lib opencv_flann248.lib opencv_gpu248.lib opencv_highgui248.lib opencv_imgproc248.lib opencv_legacy248.lib opencv_ml248.lib opencv_nonfree248.lib opencv_objdetect248.lib opencv_ocl248.lib opencv_photo248.lib opencv_stitching248.lib opencv_superres248.lib opencv_ts248.lib opencv_video248.lib opencv_videostab248.lib zlib.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /manifestinput:"D:\win10\program file\VS2013\VC\Include\Manifest\dpiaware.manifest" /DEBUG /PDB:"D:\MyProgram\MicroAutoFocus\x64\Release\MicroAutoFocus.pdb" /SUBSYSTEM:WINDOWS /OPT:REF /OPT:ICF /LTCG /TLBID:1 /ENTRY:"wWinMainCRTStartup" /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:\MyProgram\MicroAutoFocus\x64\Release\MicroAutoFocus.lib" /MACHINE:X64 x64\Release\MicroAutoFocus.res
+         x64\Release\ImageProcess.obj
+         x64\Release\MicroAutoFocus.obj
+         x64\Release\MicroAutoFocusDlg.obj
+         x64\Release\stdafx.obj
+         正在生成代码
+         已完成代码的生成
+         MicroAutoFocus.vcxproj -> D:\MyProgram\MicroAutoFocus\x64\Release\MicroAutoFocus.exe
+     1>已完成生成项目“D:\MyProgram\MicroAutoFocus\MicroAutoFocus\MicroAutoFocus.vcxproj”(Rebuild 个目标)的操作。
+
+生成成功。
+
+已用时间 00:00:06.58
