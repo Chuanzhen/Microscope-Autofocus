@@ -81,6 +81,8 @@ CMicroAutoFocusDlg::CMicroAutoFocusDlg(CWnd* pParent /*=NULL*/)
 {
 	radius = 10;
 	linewidth = 2;
+	m_FocusStep = 0.0002;
+	m_PixelLim = 4;
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
@@ -552,6 +554,10 @@ void CMicroAutoFocusDlg::ReadParam()
 
 	radius = GetPrivateProfileInt(L"MARKER", L"RADIUS", 0, L".\\Config.ini");
 	linewidth = GetPrivateProfileInt(L"MARKER", L"LINEWIDTH", 0, L".\\Config.ini");
+
+	int temp = GetPrivateProfileInt(L"FOCUS", L"FOCUSSTEP", 0, L".\\Config.ini");
+	m_FocusStep = double(temp) / 1e6;
+	m_PixelLim = GetPrivateProfileInt(L"FOCUS", L"FOCUSLIM", 0, L".\\Config.ini");
 	UpdateData(FALSE);
 }
 
@@ -567,11 +573,9 @@ void CMicroAutoFocusDlg::WriteParam()
 	WritePrivateProfileString(L"CAMERA", L"MARKER_X", str, L".\\Config.ini");
 	str.Format(L"%d", m_marker_y);
 	WritePrivateProfileString(L"CAMERA", L"MARKER_Y", str, L".\\Config.ini");
-
+	
 	str.Format(L"%d", 0);
-	WritePrivateProfileString(L"ORDER", L"AutoFocus", str, L".\\Config.ini");
-	WritePrivateProfileString(L"ORDER", L"FocusEnd", str, L".\\Config.ini");
-
+	WritePrivateProfileString(L"FOCUS", L"AutoFocus", str, L".\\Config.ini");
 	//cv::polyfit
 }
 
@@ -584,6 +588,9 @@ UINT __cdecl CameraThread(LPVOID pParam)
 	double zoom = 0;
 	IplImage *head = cvCreateImageHeader(cvSize(1280, 1024), 8, 1);
 	Mat frame, fshow;
+	double m_radius = 1000;
+	double m_LabviewFocus = 1000;
+	int numMarker = 5;
 
 	IMAGE_FILE_PARAMS ImageFileParams;
 	UINT mID = UINT(p_this->m_lMemoryId);
@@ -605,146 +612,157 @@ UINT __cdecl CameraThread(LPVOID pParam)
 			is_Exposure(p_this->m_hG, IS_EXPOSURE_CMD_SET_EXPOSURE, &exposure, 8);
 
 		}
+		is_FreezeVideo(p_this->m_hG, IS_WAIT);
+		//is_RenderBitmap(p_this->m_hG, p_this->m_lMemoryId, p_this->m_hWnd, IS_RENDER_FIT_TO_WINDOW);
 
-		int temp = GetPrivateProfileInt(L"ORDER", L"AutoFocus", 0, L".\\Config.ini");
-		if (p_this->m_autofocus == true || temp == 1)
+		cvSetData(head, p_this->m_pcImageMemory, 1280);
+		frame = cvarrToMat(head);
+		/////////////
+		fshow = frame.clone();
+		std::vector<Mat> bgr;
+		bgr.clear();
+		bgr.push_back(fshow);
+		bgr.push_back(fshow);
+		bgr.push_back(fshow);
+		cv::merge(bgr, fshow);
+		
+		circle(fshow, Point(p_this->m_marker_x, p_this->m_marker_y), p_this->radius, Scalar(0, 0, 255), p_this->linewidth, 8);
+		////////////////////////////////////// focus
+		if (p_this->m_autofocus == true)
 		{
-			p_this->m_autofocus = false;
-			p_this->GetDlgItem(ID_BUTTUON_SNAP)->EnableWindow(FALSE);
-
-			double delta[3] = { 500 };
-			double direction = -1;
-			bool ContiFocus = true;
-			double p1, p2;
-			p1 = 500;
-			////////////////////// first three loop
-			for (int i = 0; i < 3; i++)
+			if (m_radius == 1000)
 			{
-				is_FreezeVideo(p_this->m_hG, IS_WAIT);
-				//is_RenderBitmap(p_this->m_hG, p_this->m_lMemoryId, p_this->m_hWnd, IS_RENDER_FIT_TO_WINDOW);
-
-				cvSetData(head, p_this->m_pcImageMemory, 1280);
-				frame = cvarrToMat(head);
-				fshow = frame.clone();
-				circle(fshow, Point(p_this->m_marker_x, p_this->m_marker_y), p_this->radius, Scalar(255, 0, 0), p_this->linewidth, 8);
-				/**************************************************/
-				p2 = findMaxRadius(frame);
-				delta[0] = delta[1];
-				delta[1] = delta[2];
-				delta[2] = p2 - p1;
-				p1 = p2;
-				////////////////// move motor -- direction
-				p_this->MoveMotor(p_this->m_focus_pos + direction*p_this->m_motor_mm);
-				/*************************************************/
-				resize(fshow, fshow, Size(int(IMG_WIDTH*p_this->m_zoom), int(IMG_HEIGHT*p_this->m_zoom)));
-				imshow("LIVE", fshow);
+				m_radius = findMinRadius(frame);
 			}
-			if ((delta[0] > 0) && (delta[1] > 0) && (delta[2] > 0))
+			else
 			{
-				direction = 1;
-				delta[2] = -delta[2];
-				//////
-				p_this->MoveMotor(p_this->m_focus_pos + direction*p_this->m_motor_mm);
-				p_this->MoveMotor(p_this->m_focus_pos + direction*p_this->m_motor_mm);
-				///
-			}
-			else if ((delta[0] < 0) && (delta[1] < 0) && (delta[2] > 0))
-			{
-				ContiFocus = false;
-			}
-			else if ((delta[0] < 0) && (delta[1] > 0) && (delta[2] > 0))
-			{
-				direction = 1;
-				/////
-				p_this->MoveMotor(p_this->m_focus_pos + direction*p_this->m_motor_mm);
-				p_this->MoveMotor(p_this->m_focus_pos + direction*p_this->m_motor_mm);
-				///
-				ContiFocus = false;
-			}
-			//////////////////////////////////
-			while ((delta[2] < 0) && (ContiFocus == true))
-			{
-				is_FreezeVideo(p_this->m_hG, IS_WAIT);
-				//is_RenderBitmap(p_this->m_hG, p_this->m_lMemoryId, p_this->m_hWnd, IS_RENDER_FIT_TO_WINDOW);
-
-				cvSetData(head, p_this->m_pcImageMemory, 1280);
-				frame = cvarrToMat(head);
-				fshow = frame.clone();
-				circle(fshow, Point(p_this->m_marker_x, p_this->m_marker_y), p_this->radius, Scalar(255, 0, 0), p_this->linewidth, 8);
-
-				////////////////////////???????????????????????????????????????????????????????????
-				p2 = findMaxRadius(frame);
-				delta[0] = delta[1];
-				delta[1] = delta[2];
-				delta[2] = p2 - p1;
-				p1 = p2;
-				////////////////////////////////////////////////////////////////////
-
-				resize(fshow, fshow, Size(int(IMG_WIDTH*p_this->m_zoom), int(IMG_HEIGHT*p_this->m_zoom)));
-				imshow("LIVE", fshow);
-			}
-
-			p_this->GetDlgItem(ID_BUTTUON_AUTOFOCUS)->EnableWindow(TRUE);
-			p_this->GetDlgItem(ID_BUTTUON_SNAP)->EnableWindow(TRUE);
-			if (p_this->m_autofocus != true)
-			{
-				CString str = L"";
-				str.Format(L"%d", 0);
-				WritePrivateProfileString(L"ORDER", L"AutoFocus", str, L".\\Config.ini");
-
-				str.Format(L"%d", 1);
-				WritePrivateProfileString(L"ORDER", L"FocusEnd", str, L".\\Config.ini");
+				double temp = findMinRadius(frame);
+				if ((m_radius - temp) > p_this->m_PixelLim) // go up
+				{
+					p_this->MoveMotor(p_this->m_focus_pos + p_this->m_FocusStep);
+				}
+				else if ((temp - m_radius) > p_this->m_PixelLim) // go down
+				{
+					p_this->MoveMotor(p_this->m_focus_pos - p_this->m_FocusStep);
+				}
+				putText(fshow, std::to_string(m_radius), cvPoint(300, 270), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255));
+				putText(fshow, std::to_string(temp), cvPoint(300, 300), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255));
+				m_LabviewFocus = temp;
 			}
 		}
 		else
 		{
-			is_FreezeVideo(p_this->m_hG, IS_WAIT);
-			//is_RenderBitmap(p_this->m_hG, p_this->m_lMemoryId, p_this->m_hWnd, IS_RENDER_FIT_TO_WINDOW);
-
-			cvSetData(head, p_this->m_pcImageMemory, 1280);
-			frame = cvarrToMat(head);
-			fshow = frame.clone();
-			circle(fshow, Point(p_this->m_marker_x, p_this->m_marker_y), p_this->radius, Scalar(255, 0, 0), p_this->linewidth, 8);
-
-			// opencv/////////////////////////
-			if (p_this->m_snap == true)
+			m_radius = 1000;
+			numMarker = 5;
+		}
+		///////////////////////////////////////////////////////
+		if (1 == GetPrivateProfileInt(L"FOCUS", L"AutoFocus", 0, L".\\Config.ini"))
+		{
+			if (numMarker == 5)
 			{
-				imwrite("marker.png", fshow);
-				p_this->m_snap = false;
-
-				if (p_this->m_autosave == TRUE)
+				if (p_this->m_autofocus == true)
 				{
-					time_t num;
-					time(&num);
-					char strtemp[20];
-					sprintf_s(strtemp, "%d", num);
-					CString TempTime(strtemp);
-					CString Temp;
+					p_this->m_autofocus = false;
+	
+				}	
+				m_radius = m_LabviewFocus;;
 
-					if (p_this->m_name == L"")
-					{
-						Temp = p_this->m_FilePath + TempTime + L".PNG";
-					}
-					else
-					{
-						Temp = p_this->m_FilePath + p_this->m_name + L"_" + TempTime + L".PNG";;
-					}
-					// AfxMessageBox(Temp);
-					string str(CW2A(Temp.GetString()));
-					imwrite(str, frame);
+			}
+			else
+			{
+				numMarker = numMarker - 1;
+			}
+			
+			if (numMarker < 0)
+			{
+				double temp = findMinRadius(frame);
+				if ((m_radius - temp) > p_this->m_PixelLim) // inverse go up
+				{
+					p_this->MoveMotor(p_this->m_focus_pos - 6*p_this->m_FocusStep);
+					numMarker = numMarker + 4;
+				}
+				else if ((temp - m_radius) > p_this->m_PixelLim) //inverse  go down
+				{
+					p_this->MoveMotor(p_this->m_focus_pos + 6*p_this->m_FocusStep);
+					numMarker = numMarker + 4;
+				}
+				else if (abs(temp - m_radius) <= p_this->m_PixelLim)
+				{
+					CString str = L"";
+					str.Format(L"%d", 0);
+					WritePrivateProfileString(L"FOCUS", L"AutoFocus", str, L".\\Config.ini");
+					m_radius = 1000;
+					numMarker = 5;
+				}
+				putText(fshow, std::to_string(m_LabviewFocus), cvPoint(300, 270), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255));
+				putText(fshow, std::to_string(temp), cvPoint(300, 300), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255));
+
+			}
+			else
+			{
+
+				double temp = findMinRadius(frame);
+				if ((m_radius - temp) > p_this->m_PixelLim) // go up
+				{
+					p_this->MoveMotor(p_this->m_focus_pos + p_this->m_FocusStep);
+				}
+				else if ((temp - m_radius) > p_this->m_PixelLim) // go down
+				{
+					p_this->MoveMotor(p_this->m_focus_pos - p_this->m_FocusStep);
+				}
+				else if (abs(temp - m_radius) <= p_this->m_PixelLim)
+				{
+					CString str = L"";
+					str.Format(L"%d", 0);
+					WritePrivateProfileString(L"FOCUS", L"AutoFocus", str, L".\\Config.ini");
+					m_radius = 1000;
+					numMarker = 5;
+				}
+				putText(fshow, std::to_string(m_LabviewFocus), cvPoint(300, 270), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255));
+				putText(fshow, std::to_string(temp), cvPoint(300, 300), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255));
+			}
+			
+			
+		}
+		// opencv////////////////////////////////////////////////////////////////////////
+		if (p_this->m_snap == true)
+		{
+			imwrite("marker.png", fshow);
+			p_this->m_snap = false;
+
+			if (p_this->m_autosave == TRUE)
+			{
+				time_t num;
+				time(&num);
+				char strtemp[20];
+				sprintf_s(strtemp, "%d", num);
+				CString TempTime(strtemp);
+				CString Temp;
+
+				if (p_this->m_name == L"")
+				{
+					Temp = p_this->m_FilePath + TempTime + L".PNG";
 				}
 				else
 				{
-					ImageFileParams.pwchFileName = NULL;
-					is_ImageFile(p_this->m_hG, IS_IMAGE_FILE_CMD_SAVE, (void*)&ImageFileParams, sizeof(ImageFileParams));
+					Temp = p_this->m_FilePath + p_this->m_name + L"_" + TempTime + L".PNG";;
 				}
-
+				// AfxMessageBox(Temp);
+				string str(CW2A(Temp.GetString()));
+				imwrite(str, frame);
 			}
-			////////////////////////////////////////////////////////////////////
+			else
+			{
+				ImageFileParams.pwchFileName = NULL;
+				is_ImageFile(p_this->m_hG, IS_IMAGE_FILE_CMD_SAVE, (void*)&ImageFileParams, sizeof(ImageFileParams));
+			}
 
-			resize(fshow, fshow, Size(int(IMG_WIDTH*p_this->m_zoom), int(IMG_HEIGHT*p_this->m_zoom)));
-			imshow("LIVE", fshow);
 		}
+		////////////////////////////////////////////////////////////////////
+
+		resize(fshow, fshow, Size(int(IMG_WIDTH*p_this->m_zoom), int(IMG_HEIGHT*p_this->m_zoom)));
+		imshow("LIVE", fshow);
+		
 
 	}
 	return 0;
@@ -970,11 +988,13 @@ void CMicroAutoFocusDlg::OnBnClickedButtuonAutofocus()
 	if (m_autofocus == false)
 	{
 		m_autofocus = true;
-		GetDlgItem(ID_BUTTUON_AUTOFOCUS)->EnableWindow(FALSE);
+		//GetDlgItem(ID_BUTTUON_AUTOFOCUS)->EnableWindow(FALSE);
+		SetDlgItemText(ID_BUTTUON_AUTOFOCUS, L"StopFocus");
 	}
-	else
+	else if (m_autofocus == true)
 	{
 		m_autofocus = false;
+		SetDlgItemText(ID_BUTTUON_AUTOFOCUS, L"AutoFocus");
 	}
 }
 

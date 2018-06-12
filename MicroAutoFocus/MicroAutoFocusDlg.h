@@ -67,6 +67,8 @@ public:
 	bool MoveMotor(double distance);
 	double MotorMax;
 	double MotorMin;
+	double m_FocusStep;
+	int m_PixelLim;
 
 	
 	//////////////////////////////////////////////////////////////////////////////

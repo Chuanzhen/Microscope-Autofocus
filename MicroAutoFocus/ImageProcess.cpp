@@ -121,7 +121,7 @@ CalResult SolveResults(Mat _src)
 	return Output;
 }
 
-double findMaxRadius(Mat _src)
+double findMinRadius(Mat _src)
 {
 	Mat I;
 	_src.copyTo(I);
@@ -129,7 +129,7 @@ double findMaxRadius(Mat _src)
 
 	Mat bw = Mat::zeros(I.size(), CV_8UC1);
 	threshold(I, bw, 127, 255, 0);
-	morphologyEx(bw, bw, MORPH_CLOSE, getStructuringElement(MORPH_ELLIPSE, Size(20, 20)));
+	morphologyEx(bw, bw, MORPH_CLOSE, getStructuringElement(MORPH_ELLIPSE, Size(2, 2)));//20
 	vector<vector<Point> > contours;
 	vector<Vec4i> hierarchy;
 	findContours(bw, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
